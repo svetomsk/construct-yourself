@@ -44,23 +44,42 @@ bound Lam{..} = variable `insert` bound body
 substitute :: Term -> Name -> Term -> Term
 substitute v@Var{..} n b | var == n  = b
                          | otherwise = v
-substitute _ _ _ = undefined -- here you have to implement another 2 cases
+substitute a@App{..} n b = App (substitute algo n b) (substitute arg n b)
+substitute l@Lam{..} n b | variable /= n && variable `member` (free b) == True = substitute (alpha l (free b)) n b
+                         | variable == n = l
+                         | otherwise = Lam variable (substitute body n b)
 
 -- | alpha reduction
 alpha :: Term -> Set Name -> Term
-alpha = undefined
+alpha a@(Lam v b@(Lam vv bb)) s = if v `member` s
+                                  then let new = fresh s
+                                       in Lam new (alpha (substitute b v (Var new)) s)
+                                  else Lam v (alpha b s) 
+alpha a@(Lam v b) s = if v `member` s
+                      then let new = fresh s
+                           in Lam new (substitute b v (Var new))
+                      else a                 
+alpha a s = a
 
 -- | beta reduction
 beta :: Term -> Term
-beta = undefined
+beta (App (Lam var body) b) = beta (substitute body var b)
+beta (App a b) = App (beta a) (beta b)
+beta a = a
 
 -- | eta reduction
 eta :: Term -> Term
-eta = undefined
+eta a@(Lam v (App m x)) = if v == (var x) && v `member` free m == False
+                            then m
+                            else a
+eta a = a
 
 -- | reduce term
 reduce :: Term -> Term
 reduce term = let term' = beta term
               in if term' == term
-                 then eta term
+                 then let term'' = eta term
+                      in if term'' == term
+                         then term
+                         else reduce term''
                  else reduce term'
