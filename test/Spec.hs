@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Construction (Name, Term (..), bound, free, fresh, alpha, beta, eta, reduce, substitute)
+import           Construction (Name, Term (..), bound, free, fresh, alpha, beta, eta, reduce, substitute, betaNF, equal)
 import           Test.Hspec
 import Data.Set
 
@@ -17,6 +17,8 @@ main = hspec $ do
     describe "Beta test" testBeta
     describe "Eta test" testEta
     describe "Reduce test" testReduce
+    describe "Equal test" testEqual
+    describe "BetaNF test" testBetaNF
 
 varX, varX0, varX1, varX2 :: Term
 varX = Var "x"
@@ -28,6 +30,8 @@ lamId, lamK, lamKK :: Term
 lamId = Lam "x" varX -- \x.x
 lamK  = Lam "x" $ Lam "x1" varX -- \x x1.x == \x.(\x1.x)
 lamKK = Lam "x" $ Lam "x1" varX1 -- \x x1.x1 == \x.(\x1.x1)
+lamXXX = Lam "x" (App appXX varX)
+lamXX = Lam "x" appXX
 
 appXX, appXX1 :: Term
 appXX = App varX varX -- (x x)
@@ -117,4 +121,20 @@ testReduce = do
     it "#4" $ reduce (App lamK varX) `shouldBe` Lam "x1" varX
     it "#5" $ reduce (App (App lamK varX) varX2) `shouldBe` varX
     it "#6" $ reduce (Lam "x0" (App (App (App lamK varX) varX2) varX0)) `shouldBe` varX
+
+testEqual :: SpecWith() 
+testEqual = do
+    it "#1" $ equal varX varX `shouldBe` True
+    it "#2" $ equal (App varX varX) (App varX varX) `shouldBe` True
+    it "#3" $ equal (App varX varX) (App varX1 varX) `shouldBe` False
+    it "#4" $ equal (Lam "x" appXX) (Lam "x" appXX) `shouldBe` True
+    it "#5" $ equal (App lamK lamId) (App (App lamId lamId) lamKK) `shouldBe` True
       
+testBetaNF :: SpecWith() 
+testBetaNF = do
+    it "#1" $ betaNF varX `shouldBe` True
+    it "#2" $ betaNF appXX1 `shouldBe` True
+    it "#3" $ betaNF lamId `shouldBe` True
+    it "#4" $ betaNF (App lamXXX lamXX) `shouldBe` False
+    it "#5" $ betaNF (App (App lamId lamId) lamId) `shouldBe` True
+    it "#6" $ betaNF (App lamK lamId) `shouldBe` True
