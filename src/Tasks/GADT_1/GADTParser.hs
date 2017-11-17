@@ -14,36 +14,37 @@ import           Text.Parsec.Text       (Parser)
 import           Text.Parsec.Token
 
 iLitP :: Parser (Lit Int)
-iLitP = undefined
+iLitP = ILit <$> (read::String->Int) <$> (many digit)
 
 bLitP :: Parser (Lit Bool)
-bLitP = undefined
+bLitP = BLit <$> (\x -> if x == 'F' then False else True) <$> ((char 'F') <|> (char 'T')) 
 
 iiLitP :: Parser (Expr Int)
-iiLitP = Lit <$> iLitP
+iiLitP = spacedP $ try $ Lit <$> iLitP
 
 bbLitP :: Parser (Expr Bool)
-bbLitP = Lit <$> bLitP
+bbLitP = spacedP $ try $ Lit <$> bLitP
 
 addP :: Parser (Expr Int)
-addP = undefined
+addP = spacedP $ try $ Add <$> (bracketP addP <|> bracketP iiLitP <|> iiLitP) <*> (((many space *> char '+') <* many space) *> parse)
 
 leqP :: Parser (Expr Bool)
-leqP = Leq <$> (parse <* char '<') <*> parse
+leqP = spacedP $ try $ Leq <$> (bracketP addP <|> addP <|> bracketP iiLitP <|> iiLitP) <*> (((many space *> (char '<')) *> many space) *> parse)
 
 andP :: Parser (Expr Bool)
-andP = undefined
+andP = spacedP $ try $ And <$> (bracketP leqP <|> bracketP bbLitP <|> bbLitP) <*> ((many space *> (((char '&') *> (char '&')) *> many space)) *> parse)
 
 spacedP :: Parser a -> Parser a
 spacedP p = (many space *> p) <* many space
 
 bracketP :: Parser a -> Parser a
-bracketP = undefined
+bracketP p = spacedP $ try $ between (char '(') (char ')') $ spacedP p
 
 class MyParse a where
   parse :: Parser (Expr a)
 
 instance MyParse Int where
-  parse = undefined
+  parse = addP <|> bracketP addP <|> bracketP iiLitP <|> iiLitP
+
 instance MyParse Bool where
-  parse = undefined
+  parse = leqP <|> bracketP leqP <|> andP <|> bracketP andP <|> bbLitP <|> bracketP bbLitP

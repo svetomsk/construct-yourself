@@ -120,14 +120,6 @@ testReduce = do
     it "#4" $ reduce (App lamK varX) `shouldBe` Lam "x1" varX
     it "#5" $ reduce (App (App lamK varX) varX2) `shouldBe` varX
     it "#6" $ reduce (Lam "x0" (App (App (App lamK varX) varX2) varX0)) `shouldBe` varX
-
-testEqual :: SpecWith() 
-testEqual = do
-    it "#1" $ equal varX varX `shouldBe` True
-    it "#2" $ equal (App varX varX) (App varX varX) `shouldBe` True
-    it "#3" $ equal (App varX varX) (App varX1 varX) `shouldBe` False
-    it "#4" $ equal (Lam "x" appXX) (Lam "x" appXX) `shouldBe` True
-    it "#5" $ equal (App lamK lamId) (App (App lamId lamId) lamKK) `shouldBe` True
       
 testEqual :: SpecWith ()
 testEqual = do

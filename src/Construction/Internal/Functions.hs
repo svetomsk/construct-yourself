@@ -8,7 +8,7 @@
 module Construction.Internal.Functions
   ( Context (..)        -- make restrictions is good practice. As you can see here,
   , fresh, free, bound  -- we make "public" not all functions, but only Context, fresh, ...
-  , reduce, substitute, alpha, beta, eta
+  , reduce, substitute, alpha, beta, eta, equal, hasRedex, betaNF, hasTermAsSubterm
   ) where
 
 import           Construction.Internal.Types (Name, Term (..))
@@ -74,18 +74,6 @@ eta l@(Lam v (App algo (Var e))) | hasEta    = algo
                                  | otherwise = l
   where hasEta = v == e && v `notMember` free algo
 eta term = term
-
-
-substitute :: Term -> Name -> Term -> Term
-substitute v@Var{..} n e | var == n  = e
-                         | otherwise = v
-substitute   App{..} n e = App (substitute algo n e) (substitute arg n e)
-substitute l@Lam{..} n e | variable == n = l
-                         | otherwise = let cond   = variable `member` free e
-                                           a_lam  = alpha l (free e)
-                                           s_body = substitute body n e
-                                       in if cond then substitute a_lam n e
-                                                  else Lam variable s_body
 
 
 instance Eq Term where

@@ -1,5 +1,4 @@
 module Construction.Internal.Parser where
-
 import           Construction.Internal.Types (Term (..))
 import           Data.Text                   (pack)
 import           Text.Parsec.Char            (char, digit, space)
@@ -22,10 +21,12 @@ appP = try $ between (char '(') (char ')') $
            <*> termP
 
 bracketP :: Parser Term
-bracketP = undefined
+bracketP = try $ between (char '(') (char ')') $ termP
+
 
 lamP :: Parser Term
-lamP = undefined
+lamP = try $ between  (char '(') (char ')') $ 
+       Lam <$> ((\x -> pack x) <$> ((char '\\') *> nameP)) <* (char '.') <*> termP
 
 nameP :: Parser String
 nameP = (:) <$> char 'x' <*> many digit
