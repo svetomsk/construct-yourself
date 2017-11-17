@@ -20,19 +20,19 @@ bLitP :: Parser (Lit Bool)
 bLitP = BLit <$> (\x -> if x == 'F' then False else True) <$> ((char 'F') <|> (char 'T')) 
 
 iiLitP :: Parser (Expr Int)
-iiLitP = spacedP $ try $ Lit <$> iLitP
+iiLitP = try $ Lit <$> spacedP iLitP
 
 bbLitP :: Parser (Expr Bool)
 bbLitP = spacedP $ try $ Lit <$> bLitP
 
 addP :: Parser (Expr Int)
-addP = spacedP $ try $ Add <$> (bracketP addP <|> bracketP iiLitP <|> iiLitP) <*> (((many space *> char '+') <* many space) *> parse)
+addP = spacedP $ try $ Add <$> (bracketP addP <|> bracketP iiLitP <|> iiLitP) <*> ((spacedP (char '+')) *> parse)
 
 leqP :: Parser (Expr Bool)
-leqP = spacedP $ try $ Leq <$> (bracketP addP <|> addP <|> bracketP iiLitP <|> iiLitP) <*> (((many space *> (char '<')) *> many space) *> parse)
+leqP = spacedP $ try $ Leq <$> (bracketP addP <|> addP <|> bracketP iiLitP <|> iiLitP) <*> ((spacedP (char '<')) *> parse)
 
 andP :: Parser (Expr Bool)
-andP = spacedP $ try $ And <$> (bracketP leqP <|> bracketP bbLitP <|> bbLitP) <*> ((many space *> (((char '&') *> (char '&')) *> many space)) *> parse)
+andP = spacedP $ try $ And <$> (bracketP leqP <|> bracketP bbLitP <|> bbLitP) <*> (spacedP ((char '&') *> (char '&')) *> parse)
 
 spacedP :: Parser a -> Parser a
 spacedP p = (many space *> p) <* many space
