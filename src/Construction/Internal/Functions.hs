@@ -6,7 +6,7 @@
 
 
 module Construction.Internal.Functions
-  ( Context (..)        -- make restrictions is good practice. As you can see here,
+  ( Context (..)        -- make restrictions is good practice. As you can see here
   , fresh, free, bound  -- we make "public" not all functions, but only Context, fresh, ...
   , reduce, substitute, alpha, beta, eta, equal, hasRedex, betaNF, hasTermAsSubterm
   ) where
