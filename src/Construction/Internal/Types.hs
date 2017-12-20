@@ -6,6 +6,7 @@ module Construction.Internal.Types
 
 import Data.Text (Text) -- we want to import only Text from Data.Text.
 import Data.Map  (Map (..))
+import qualified Data.Map as Map
 import Data.Set  (Set (..))
 
 
@@ -30,10 +31,19 @@ newtype Substitution = Substitution { getSubs :: Map Name Type } -- Substitute t
 
 type Equation = (Type, Type) -- Equation on types
 
+mergeMaps :: Map Name Type -> Map Name Type -> Map Name Type
+mergeMaps a b = Map.unionWith (\x y -> x) a b
+
 instance Monoid Context where
-  mempty = undefined
-  Context a `mappend` Context b = undefined
+  mempty = Context Map.empty
+  mappend a b = Context (mergeMaps (getCtx a) (getCtx b))
+
+instance Eq Context where
+  a == b = (getCtx a) == (getCtx b)
 
 instance Monoid Substitution where
-  mempty = undefined
-  Substitution a `mappend` Substitution b = undefined
+  mempty = Substitution Map.empty
+  mappend a b = Substitution (mergeMaps (getSubs a) (getSubs b))
+
+instance Eq Substitution where
+  a == b = (getSubs a) == (getSubs b)
