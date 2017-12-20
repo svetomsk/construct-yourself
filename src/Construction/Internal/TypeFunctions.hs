@@ -5,7 +5,7 @@ module Construction.Internal.TypeFunctions where
 
 import qualified Data.Map                        as M ((!), empty, lookup, unionWith, fromList, member, keysSet, insert, fromList, elems)
 import           Data.Text                       (pack)
-import           Data.Set                        as S (Set (..), elemAt, delete, singleton, toList, union, member, map, fromList)
+import           Data.Set                        as S (Set (..), elemAt, delete, singleton, toList, union, member, map, fromList, empty)
 import           Construction.Internal.Types
 import           Data.Typeable                   (typeOf)
 import           Construction.Internal.Functions hiding (Context, substitute)
@@ -64,7 +64,7 @@ freeVars TArr{..} = union (freeVars from) (freeVars to)
 
 -- Return fresh TVar different from every in Context and given type
 freshType :: Context -> Type -> Type
-freshType ctx t = let ctxNames = S.map (\x-> (tvar x)) $ S.fromList(M.elems (getCtx ctx))
+freshType ctx t = let ctxNames = foldr S.union S.empty ((\x -> S.map (\y -> tvar y) (freeVars x)) <$> (M.elems (getCtx ctx)) )
                   in case t of
                     TVar{..} -> TVar $ fresh (S.union ctxNames (singleton tvar))
                     TArr{..} -> let typeNames = S.map (\x -> tvar x) (S.union (freeVars from) (freeVars to))
@@ -76,23 +76,22 @@ u set | null set  = pure mempty
       | otherwise = let (x, rest) = split set
                         a = fst x
                         b = snd x
-                    in  if (typeOf a) == (typeOf b) && (typeOf b == typeOf (TVar "a")) 
-                         then let subst = Substitution (M.fromList[(tvar a, b)])
-                             in  if a == b                            then u rest
-                                 else if S.member a (freeVars b)      then Nothing
-                                 else if not (S.member a (freeVars b)) 
-                                    then let us = u (S.map (\x -> (substitute subst (fst x), (substitute subst (snd x)))) rest)
-                                          in case us of
-                                              Just a -> Just (compose a subst)
-                                              Nothing -> Nothing                                      
-                                 else u (union (singleton (b, a)) rest)
-                         else if (typeOf a) == (typeOf b) && (typeOf b == typeOf (TArr a b))
-                         then let s1 = (from a)
-                                  s2 = (to a)
-                                  t1 = (from b)
-                                  t2 = (to b)
-                              in u (union (union (singleton (s1, t1)) (singleton (s2, t2))) rest)
-                         else Nothing
+                    in  case a of
+                        TVar{..} -> 
+                          if a == b                             then u rest
+                          else if S.member a (freeVars b)       then Nothing
+                          else if not (S.member a (freeVars b)) 
+                            then let 
+                                  subst = Substitution (M.fromList[(tvar, b)])
+                                  us = u (S.map (\x -> (substitute subst (fst x), (substitute subst (snd x)))) rest)
+                                  in case us of
+                                      Just a -> Just (compose a subst)
+                                      Nothing -> Nothing
+                            else Nothing   
+                        TArr fromA toA ->
+                          case b of
+                          TVar{..} -> u (union (singleton (b, a)) rest)
+                          TArr fromB toB -> u (union (union (singleton (fromA, fromB)) (singleton (toA, toB))) rest)
 
 
 
@@ -109,9 +108,12 @@ maybeUnion s1 s2 = case s1 of
 -- NB: you can use @fresh@ function to generate type names
 e :: Context -> Term -> Type -> Maybe (Set Equation)
 e ctx term tpe = case term of
-                   Var{..} -> (\x -> singleton (tpe,x)) <$> ctx ! var
+                   Var{..} -> if(ctx ! var == Nothing) then Nothing
+                              else (\x -> singleton (tpe,x)) <$> ctx ! var 
                    App{..} -> let alpha = freshType ctx tpe
-                                  in maybeUnion (e ctx algo (TArr alpha tpe)) (e ctx arg  alpha)
+                                  eAlgo = e ctx algo (TArr alpha tpe)
+                                  eArg  = e ctx arg alpha
+                                  in maybeUnion eAlgo eArg
                    Lam{..} -> let alpha = freshType ctx tpe
                                   beta = freshType ctx (TArr tpe alpha)
                                   firstE = e (Context (M.insert variable alpha (getCtx ctx))) body beta
