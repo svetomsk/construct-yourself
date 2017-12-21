@@ -2,17 +2,19 @@
 
 module Main where
 
-import           Construction (Name, Term (..), appP, varP, lamP, termP, Type (..), tVarP, tArrP, typeP)
+import           Construction (Name, Term (..), TypedTerm, appP, varP, lamP, termP, Type (..), Context (..), typeP, typedVarP)
 import           Test.Hspec
 import Text.Parsec
 import Text.Parsec.Text
 import Data.Text 
+import Data.Map (fromList)
 
 
 main :: IO ()
 main = hspec $ do
     describe "Parser test" parserTest
     describe "Type parser test" typeParserTest
+    describe "Typed ctx test" typedCtxTest
     
 parserTest :: SpecWith ()
 parserTest = do
@@ -50,18 +52,6 @@ parserTest = do
   it "should test bracket parser" $ do
     check termP "((\\x.x)  (x1))" combined1 
     check termP "((((\\x2.((\\x.x) x1)))))" combined2
-
-
-tpX = TVar "x"
-tpY = TVar "y"
-tpXY = TArr tpX tpY
-
-typeParserTest :: SpecWith ()
-typeParserTest = do
-  it "#1" $ check typeP "x" tpX
-  it "#2" $ check typeP "x ->  y" tpXY
-  it "#3" $ check typeP "x -> x -> y" (TArr tpX (TArr tpX tpY))
-
 
 check :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
 check parser inputStr result =

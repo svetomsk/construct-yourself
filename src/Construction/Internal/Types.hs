@@ -1,7 +1,7 @@
 module Construction.Internal.Types
   ( Name, Term(..)
   , Type (..), Context (..), Substitution (..)
-  , Equation
+  , Equation, TypedTerm
   ) where
 
 import Data.Text (Text) -- we want to import only Text from Data.Text.
@@ -22,6 +22,8 @@ data Term = Var { var :: Name }                     -- Variables: a, b, ...
 data Type = TVar { tvar :: Name }                   -- Type variables: a, b, ...
           | TArr { from :: Type, to :: Type }       -- Arrow types: a -> b
   deriving (Eq, Ord, Show)
+
+type TypedTerm = (Term, Type)
 
 newtype Context = Context { getCtx :: Map Name Type } -- Types of variables
   deriving (Show)
