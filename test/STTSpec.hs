@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction (Name, Term (..), Type (..), Context (..), Substitution (..)
-  , Equation, Substitutable(substitute), compose, e, u, termP)
+  , Equation, Substitutable(substitute), compose, e, u, termP, typeP)
 import           Data.Map as Map (empty, fromList, unionWith, (!))
 import           Data.Set as Set (fromList, empty)
 import           Test.Hspec
@@ -30,7 +30,10 @@ mkSubst :: [(Name, Type)] -> Substitution
 mkSubst list = Substitution $ Map.fromList $ list
 
 parseTerm :: Text -> Term
-parseTerm txt = fromRight (Var "x") (parse termP "parseTest" txt)
+parseTerm txt = fromRight (Var "x") (parse termP "parseTerm" txt)
+
+parseType :: Text -> Type
+parseType txt = fromRight (TVar "x") (parse typeP "parseType" txt)
 
 nameA = "a"
 nameB = "b"
@@ -45,9 +48,9 @@ nameSigma = "sigma"
 nameAplha = "alpha"
 nameBeta = "beta"
 
-typeVarT = TVar "t"
-typeVarB = TVar "b"
-typeVarC = TVar "c"
+tpT = TVar "t"
+tpB = TVar "b"
+tpC = TVar "c"
 tpSigma = TVar nameSigma
 tpX = TVar nameX
 tpY = TVar nameY
@@ -57,7 +60,7 @@ tpX2 = TVar nameX2
 tpX3 = TVar nameX3
 tpAlpha = TVar nameAplha
 tpBeta = TVar nameBeta
-arrType = TArr typeVarT typeVarB
+arrType = TArr tpT tpB
 tpX2X0 = TArr tpX2 tpX0
 tpX020 = TArr tpX0 tpX2X0
 tpFail = TVar "fail"
@@ -65,18 +68,18 @@ noType = TVar "notype"
 
 emptyCtx = Context Map.empty
 
-contextBT = mkCtx [(nameB, typeVarT)]
-contextBC = mkCtx [(nameB, typeVarC)]
-contextTB = mkCtx [(nameT, typeVarB)]
-contextTC = mkCtx [(nameT, typeVarC)]
+contextBT = mkCtx [(nameB, tpT)]
+contextBC = mkCtx [(nameB, tpC)]
+contextTB = mkCtx [(nameT, tpB)]
+contextTC = mkCtx [(nameT, tpC)]
 ctxXaYb = mkCtx [(nameX, TArr tpAlpha tpBeta), (nameY, tpAlpha)]
 ctxXY = mkCtx [(nameX, tpY)]
 
 emptySubst = Substitution (Map.empty)
-substAT = mkSubst [(nameA, typeVarT)]
-substBC = mkSubst [(nameB, typeVarC)]
-substTC = mkSubst [(nameT, typeVarC)]
-substAC = mkSubst [(nameA, typeVarC)]
+substAT = mkSubst [(nameA, tpT)]
+substBC = mkSubst [(nameB, tpC)]
+substTC = mkSubst [(nameT, tpC)]
+substAC = mkSubst [(nameA, tpC)]
 substXX0 = mkSubst [(nameX, tpX0)]
 substX01 = mkSubst [(nameX0, tpX1)]
 substX12 = mkSubst [(nameX1, tpX2)]
@@ -87,10 +90,10 @@ substX30 = mkSubst [(nameX3, tpX0)]
 
 varX = parseTerm nameX
 varY = parseTerm nameY
-lamXY_X = parseTerm "(\\x.(\\y.x))" --Lam nameX $ Lam nameY varX
-appXY = parseTerm "(x y)" --App varX varY
-lamXX = parseTerm "(\\x.x)" --Lam nameX varX
-appLam = parseTerm "((\\x.x) y)" -- App (Lam "x" varX) varY
+lamXY_X = parseTerm "(\\x.(\\y.x))"
+appXY = parseTerm "(x y)"
+lamXX = parseTerm "(\\x.x)"
+appLam = parseTerm "((\\x.x) y)"
 
 res1set = Set.fromList [(tpSigma, tpY)]
 res2set = Set.fromList([(tpSigma, (TArr tpX0 tpX1)), (tpX1, (TArr tpX2 tpX3)), (tpX3, tpX0)])
@@ -101,7 +104,7 @@ testContextMonoid :: SpecWith ()
 testContextMonoid = do
     it "#1" $ mappend mempty contextBT `shouldBe` contextBT
     it "#2" $ mappend contextBC mempty `shouldBe` contextBC
-    it "#3" $ mappend contextBC contextTB `shouldBe` Context (Map.fromList [(nameB, typeVarC), (nameT, typeVarB)])
+    it "#3" $ mappend contextBC contextTB `shouldBe` Context (Map.fromList [(nameB, tpC), (nameT, tpB)])
     it "#4" $ mappend mempty mempty `shouldBe` emptyCtx
     it "#5" $ mappend contextBT contextBC `shouldBe` contextBT
 
@@ -109,7 +112,7 @@ testSubstitutionMonoid :: SpecWith ()
 testSubstitutionMonoid = do
     it "#1" $ mappend mempty substAT `shouldBe` substAT
     it "#2" $ mappend substAT mempty `shouldBe` substAT
-    it "#3" $ mappend substAT substBC `shouldBe` mkSubst [(nameA, TVar "t"), (nameB, typeVarC)]
+    it "#3" $ mappend substAT substBC `shouldBe` mkSubst [(nameA, TVar "t"), (nameB, tpC)]
     it "#4" $ mappend mempty mempty `shouldBe` Substitution Map.empty
     it "#5" $ mappend substAT substAC `shouldBe` substAT
 
@@ -123,17 +126,17 @@ testSubstInContext = do
 
 testSubstInType :: SpecWith ()
 testSubstInType = do
-    it "#1" $ substitute substAT typeVarT `shouldBe` typeVarT
-    it "#2" $ substitute substBC typeVarB `shouldBe` typeVarC
-    it "#3" $ substitute substBC arrType `shouldBe` (TArr typeVarT typeVarC)
-    it "#4" $ substitute substBC (TArr arrType typeVarB) `shouldBe` (TArr (TArr typeVarT typeVarC) typeVarC)
-    it "#5" $ substitute substBC (TArr arrType (TArr typeVarC typeVarB)) `shouldBe` (TArr (TArr typeVarT typeVarC) (TArr typeVarC typeVarC))
+    it "#1" $ substitute substAT tpT `shouldBe` tpT
+    it "#2" $ substitute substBC tpB `shouldBe` tpC
+    it "#3" $ substitute substBC arrType `shouldBe` (TArr tpT tpC)
+    it "#4" $ substitute substBC (TArr arrType tpB) `shouldBe` (TArr (TArr tpT tpC) tpC)
+    it "#5" $ substitute substBC (TArr arrType (TArr tpC tpB)) `shouldBe` (TArr (TArr tpT tpC) (TArr tpC tpC))
 
 testCompose :: SpecWith ()
 testCompose = do
     it "#1" $ compose emptySubst substAT `shouldBe` substAT
-    it "#2" $ compose substAT substBC  `shouldBe` Substitution (Map.fromList[(nameB, typeVarC), (nameA, typeVarT)])
-    it "#3" $ compose substTC substAT  `shouldBe` Substitution (Map.fromList[(nameA, typeVarC), (nameT, typeVarC)])
+    it "#2" $ compose substAT substBC  `shouldBe` Substitution (Map.fromList[(nameB, tpC), (nameA, tpT)])
+    it "#3" $ compose substTC substAT  `shouldBe` Substitution (Map.fromList[(nameA, tpC), (nameT, tpC)])
     it "#4" $ compose substX12 (compose substX01 substXX0) `shouldBe` Substitution (Map.fromList [(nameX, tpX2), (nameX0, tpX2), (nameX1, tpX2)])
     it "#5" $ compose substX30 (compose substX1A23 substXA01) `shouldBe` Substitution (Map.fromList [(nameX3, tpX0), (nameX1, TArr tpX2 tpX0), (nameX, TArr tpX0 (TArr tpX2 tpX0))])
 

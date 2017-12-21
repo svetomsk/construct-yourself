@@ -31,4 +31,14 @@ lamP = try $ between  (char '(') (char ')') $
 nameP :: Parser String
 nameP = (:) <$> ((many space) *> (char 'x' <|> char 'y')) <*> (many digit <* (many space))
 
+bracketTP :: Parser Type -> Parser Type
+bracketTP pt = try $ ((many space) *>(char '(')) *> pt <* ((char ')') <* (many space))
 
+typeP :: Parser Type
+typeP = try $ tArrP <|> tVarP <|> bracketTP typeP
+
+tVarP :: Parser Type
+tVarP = try $ TVar <$> (\x -> pack x) <$> nameP
+
+tArrP :: Parser Type
+tArrP = try $ TArr <$> ((tVarP <|> bracketTP tVarP <|> bracketTP tArrP) <* (char '-' *> char '>')) <*> typeP

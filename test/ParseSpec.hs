@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Construction (Name, Term (..), TypedTerm, appP, varP, lamP, termP, Type (..), Context (..))
+import           Construction (Name, Term (..), TypedTerm, appP, varP, lamP, termP, Type (..), Context (..), typeP)
 import           Test.Hspec
 import Text.Parsec
 import Text.Parsec.Text
@@ -13,6 +13,7 @@ import Data.Map (fromList)
 main :: IO ()
 main = hspec $ do
     describe "Parser test" parserTest
+    describe "Types test" typesTest
     
 parserTest :: SpecWith ()
 parserTest = do
@@ -54,6 +55,18 @@ parserTest = do
     check termP "((\\x.x)  (x1))" combined1 
     check termP "((((\\x2.((\\y.x) x1)))))" combined2
     check termP "(\\x.(\\y.x))" combLam
+
+tpX = TVar "x"
+tpX0 = TVar "x0"
+tpXX0 = TArr tpX tpX0
+typesTest :: SpecWith ()
+typesTest = do
+  it "#1" $ check typeP "x" tpX 
+  it "#2" $ check typeP "x -> x0" tpXX0
+  it "#3" $ check typeP "((x) -> (x0))" tpXX0
+  it "#4" $ check typeP "(x -> x0)->x" (TArr tpXX0 tpX)
+  it "#5" $ check typeP "((x -> x0) -> (x ->  x0))" (TArr tpXX0 tpXX0)
+
 
 check :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
 check parser inputStr result =
