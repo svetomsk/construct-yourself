@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Construction (Name, Term (..), TypedTerm, appP, varP, lamP, termP, Type (..), Context (..), typeP, typedVarP)
+import           Construction (Name, Term (..), TypedTerm, appP, varP, lamP, termP, Type (..), Context (..))
 import           Test.Hspec
 import Text.Parsec
 import Text.Parsec.Text
@@ -13,8 +13,6 @@ import Data.Map (fromList)
 main :: IO ()
 main = hspec $ do
     describe "Parser test" parserTest
-    describe "Type parser test" typeParserTest
-    describe "Typed ctx test" typedCtxTest
     
 parserTest :: SpecWith ()
 parserTest = do
@@ -23,7 +21,8 @@ parserTest = do
       varX2 = Var "x2"
 
       combined1 = App (Lam "x" varX) varX1
-      combined2 = Lam "x2" (App (Lam "x" varX) varX1)
+      combined2 = Lam "x2" (App (Lam "y" varX) varX1)
+      combLam = Lam "x" (Lam "y" varX)
 
   it "should test var parser" $ do
     check varP "x" varX
@@ -34,11 +33,13 @@ parserTest = do
         app2  = App varX1 varX2
         app3  = App varX (App varX1 varX2)
         app4  = App (App varX varX1) varX2
+        app5  = App varX (Var "y")
     check termP "(x x1)" app1
     check termP "(x     x1)" app1
     check termP "(x1 x2)" app2
     check termP "(x (x1 x2))" app3
     check termP "((x x1) x2)" app4
+    check termP "(x y)" app5
     
   it "should test lam parser" $ do
     let lam1 = Lam "x" varX
@@ -51,7 +52,8 @@ parserTest = do
 
   it "should test bracket parser" $ do
     check termP "((\\x.x)  (x1))" combined1 
-    check termP "((((\\x2.((\\x.x) x1)))))" combined2
+    check termP "((((\\x2.((\\y.x) x1)))))" combined2
+    check termP "(\\x.(\\y.x))" combLam
 
 check :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
 check parser inputStr result =

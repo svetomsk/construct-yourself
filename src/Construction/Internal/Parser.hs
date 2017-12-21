@@ -14,7 +14,7 @@ termP :: Parser Term
 termP = varP <|> appP <|> lamP <|> bracketP
 
 varP :: Parser Term
-varP =  (\x y -> Var $ pack (x:y)) <$> char 'x' <*> many digit
+varP =  (\x y -> Var $ pack (x:y)) <$> (char 'x' <|> char 'y') <*> many digit
 
 appP :: Parser Term
 appP = try $ between (char '(') (char ')') $
@@ -29,6 +29,6 @@ lamP = try $ between  (char '(') (char ')') $
        Lam <$> ((\x -> pack x) <$> ((char '\\') *> nameP)) <* (char '.') <*> termP
 
 nameP :: Parser String
-nameP = (:) <$> ((many space) *> char 'x') <*> (many digit <* (many space))
+nameP = (:) <$> ((many space) *> (char 'x' <|> char 'y')) <*> (many digit <* (many space))
 
 

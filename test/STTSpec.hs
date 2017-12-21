@@ -11,6 +11,8 @@ import           Data.Set
 import           Data.Maybe as MB (fromJust)
 import           Text.Parsec
 import           Text.Parsec.Text
+import           Data.Text
+import           Data.Either (fromRight)
 
 main :: IO ()
 main = hspec $ do
@@ -27,7 +29,8 @@ mkCtx list = Context $ Map.fromList $ list
 mkSubst :: [(Name, Type)] -> Substitution
 mkSubst list = Substitution $ Map.fromList $ list
 
---parseTerm :: 
+parseTerm :: Text -> Term
+parseTerm txt = fromRight (Var "x") (parse termP "parseTest" txt)
 
 nameA = "a"
 nameB = "b"
@@ -82,12 +85,12 @@ substX1A23 = mkSubst [(nameX1, TArr tpX2 tpX3)]
 substX30 = mkSubst [(nameX3, tpX0)]
 
 
-varX = Var nameX
-varY = Var nameY
-lamXY_X = Lam nameX $ Lam nameY varX
-appXY = App varX varY
-lamXX = Lam nameX varX
-appLam = App (Lam "x" varX) varY
+varX = parseTerm nameX
+varY = parseTerm nameY
+lamXY_X = parseTerm "(\\x.(\\y.x))" --Lam nameX $ Lam nameY varX
+appXY = parseTerm "(x y)" --App varX varY
+lamXX = parseTerm "(\\x.x)" --Lam nameX varX
+appLam = parseTerm "((\\x.x) y)" -- App (Lam "x" varX) varY
 
 res1set = Set.fromList [(tpSigma, tpY)]
 res2set = Set.fromList([(tpSigma, (TArr tpX0 tpX1)), (tpX1, (TArr tpX2 tpX3)), (tpX3, tpX0)])
