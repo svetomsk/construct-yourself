@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction (Name, Term (..), Type (..), Context (..), Substitution (..)
-  , Equation, Substitutable(substitute), compose, e, u, termP, typeP)
+  , Equation, Substitutable(sub), compose, e, u, termP, typeP)
 import           Data.Map as Map (empty, fromList, unionWith, (!))
 import           Data.Set as Set (fromList, empty)
 import           Test.Hspec
@@ -118,19 +118,19 @@ testSubstitutionMonoid = do
 
 testSubstInContext :: SpecWith ()
 testSubstInContext = do
-    it "#1" $ substitute substAT emptyCtx `shouldBe` emptyCtx
-    it "#2" $ substitute substAT contextBT `shouldBe` contextBT
-    it "#3" $ substitute substBC contextTB `shouldBe` contextTC
-    it "#4" $ substitute substBC ( substitute substAT contextTB) `shouldBe` contextTC
-    it "#5" $ substitute substAT ( substitute substBC contextTB) `shouldBe` contextTC
+    it "#1" $ sub substAT emptyCtx `shouldBe` emptyCtx
+    it "#2" $ sub substAT contextBT `shouldBe` contextBT
+    it "#3" $ sub substBC contextTB `shouldBe` contextTC
+    it "#4" $ sub substBC ( sub substAT contextTB) `shouldBe` contextTC
+    it "#5" $ sub substAT ( sub substBC contextTB) `shouldBe` contextTC
 
 testSubstInType :: SpecWith ()
 testSubstInType = do
-    it "#1" $ substitute substAT tpT `shouldBe` tpT
-    it "#2" $ substitute substBC tpB `shouldBe` tpC
-    it "#3" $ substitute substBC arrType `shouldBe` (TArr tpT tpC)
-    it "#4" $ substitute substBC (TArr arrType tpB) `shouldBe` (TArr (TArr tpT tpC) tpC)
-    it "#5" $ substitute substBC (TArr arrType (TArr tpC tpB)) `shouldBe` (TArr (TArr tpT tpC) (TArr tpC tpC))
+    it "#1" $ sub substAT tpT `shouldBe` tpT
+    it "#2" $ sub substBC tpB `shouldBe` tpC
+    it "#3" $ sub substBC arrType `shouldBe` (TArr tpT tpC)
+    it "#4" $ sub substBC (TArr arrType tpB) `shouldBe` (TArr (TArr tpT tpC) tpC)
+    it "#5" $ sub substBC (TArr arrType (TArr tpC tpB)) `shouldBe` (TArr (TArr tpT tpC) (TArr tpC tpC))
 
 testCompose :: SpecWith ()
 testCompose = do

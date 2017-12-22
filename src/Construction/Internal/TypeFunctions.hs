@@ -24,32 +24,32 @@ ctx ! x | M.member x (getCtx ctx) = Just $ getCtx ctx M.! x
 
 -- Something we can perform substitution with
 class Substitutable a where
-  substitute :: Substitution -> a -> a
+  sub :: Substitution -> a -> a
 
 --   Substitution in context
 --   [a:=t]empty       => empty
 --   [a:=t]{x:t1 ... } => {x:([a:=t]t1) ... }
 instance Substitutable Context where
-  substitute subst ctx =  let ctxValue = getCtx ctx
+  sub subst ctx =  let ctxValue = getCtx ctx
                     in if ctxValue == M.empty
                        then Context (M.empty)
-                       else Context (fmap (\x -> (substitute subst x)) ctxValue)
+                       else Context (fmap (\x -> (sub subst x)) ctxValue)
 
 -- Substitution in type:
 --   [a:=t] a     => t
 --   [a:=t] b     => b
 --   [a:=t](r->p) => ([a:=t]r)->([a:=t]p)
 instance Substitutable Type where
-  substitute subst tp = case tp of
+  sub subst tp = case tp of
                       TVar{..} -> case (M.lookup tvar (getSubs subst)) of
                                     Just m -> m
                                     Nothing -> TVar tvar
-                      TArr{..} -> TArr (substitute subst from) (substitute subst to)
+                      TArr{..} -> TArr (sub subst from) (sub subst to)
 
 -- Compose two substitutions
 -- S@[a1 := t1, ...] . [b1 := s1 ...] = [b1 := S(s1) ... a1 := t1 ...]
 compose :: Substitution -> Substitution -> Substitution
-compose t s= Substitution (M.unionWith (\x y -> x) (fmap (\x -> substitute t x) (getSubs s)) (getSubs t) )
+compose t s= Substitution (M.unionWith (\x y -> x) (fmap (\x -> sub t x) (getSubs s)) (getSubs t) )
 
 -- Create new context from free variables of some term
 contextFromTerm :: Term -> Context
@@ -83,7 +83,7 @@ u set | null set  = pure mempty
                           else if not (S.member a (freeVars b)) 
                             then let 
                                   subst = Substitution (M.fromList[(tvar, b)])
-                                  us = u (S.map (\x -> (substitute subst (fst x), (substitute subst (snd x)))) rest)
+                                  us = u (S.map (\x -> (sub subst (fst x), (sub subst (snd x)))) rest)
                                   in case us of
                                       Just a -> Just (compose a subst)
                                       Nothing -> Nothing
@@ -126,4 +126,4 @@ pp term = do let ctx = contextFromTerm term
              let tpe = TVar "r"
              eqs <- e ctx term tpe
              subs <- u eqs
-             pure (substitute subs ctx, substitute subs tpe)
+             pure (sub subs ctx, sub subs tpe)

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 module Construction.Internal.Parser where
-import           Construction.Internal.Types (Term (..), Type (..), Context (..), TypedTerm)
+import           Construction.Internal.Types (Term (..), Type (..), Context (..))
 import           Data.Text                   (pack)
 import           Text.Parsec.Char            (char, digit, space)
 import           Text.Parsec.Combinator      (between, many1)

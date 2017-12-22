@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Construction (Name, Term (..), TypedTerm, appP, varP, lamP, termP, Type (..), Context (..), typeP)
+import           Construction (Name, Term (..), appP, varP, lamP, termP, Type (..), Context (..), typeP)
 import           Test.Hspec
 import Text.Parsec
 import Text.Parsec.Text
