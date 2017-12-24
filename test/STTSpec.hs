@@ -13,6 +13,7 @@ import           Text.Parsec
 import           Text.Parsec.Text
 import           Data.Text
 import           Data.Either (fromRight)
+import           Text.Printf (printf)
 
 main :: IO ()
 main = hspec $ do
@@ -34,6 +35,12 @@ parseTerm txt = fromRight (Var "x") (parse termP "parseTerm" txt)
 
 parseType :: Text -> Type
 parseType txt = fromRight (TVar "x") (parse typeP "parseType" txt)
+
+pretty :: (Show a, Show b) => Int -> a -> b -> String
+pretty number x y = printf "#%i: %s == %s" number (show x) (show y)
+
+itStatement :: (Eq a, Show a) => Int -> a -> a -> SpecWith ()
+itStatement num x y = it (pretty num x y) $ x `shouldBe` y
 
 nameA = "a"
 nameB = "b"
@@ -102,52 +109,52 @@ res4set = Set.fromList([(tpX1, tpX0), (tpSigma, TArr tpX0 tpX1)])
 
 testContextMonoid :: SpecWith () 
 testContextMonoid = do
-    it "#1" $ mappend mempty contextBT `shouldBe` contextBT
-    it "#2" $ mappend contextBC mempty `shouldBe` contextBC
-    it "#3" $ mappend contextBC contextTB `shouldBe` Context (Map.fromList [(nameB, tpC), (nameT, tpB)])
-    it "#4" $ mappend mempty mempty `shouldBe` emptyCtx
-    it "#5" $ mappend contextBT contextBC `shouldBe` contextBT
+    itStatement 1 (mappend contextBC mempty) contextBC
+    itStatement 2 (mappend contextBC mempty) contextBC
+    itStatement 3 (mappend contextBC contextTB) (Context (Map.fromList [(nameB, tpC), (nameT, tpB)]))
+    itStatement 4 (mappend mempty mempty) emptyCtx
+    itStatement 5 (mappend contextBT contextBC) contextBT
 
 testSubstitutionMonoid :: SpecWith ()
 testSubstitutionMonoid = do
-    it "#1" $ mappend mempty substAT `shouldBe` substAT
-    it "#2" $ mappend substAT mempty `shouldBe` substAT
-    it "#3" $ mappend substAT substBC `shouldBe` mkSubst [(nameA, TVar "t"), (nameB, tpC)]
-    it "#4" $ mappend mempty mempty `shouldBe` Substitution Map.empty
-    it "#5" $ mappend substAT substAC `shouldBe` substAT
+    itStatement 1 (mappend mempty substAT) substAT
+    itStatement 2 (mappend substAT mempty) substAT
+    itStatement 3 (mappend substAT substBC) (mkSubst [(nameA, TVar "t"), (nameB, tpC)])
+    itStatement 4 (mappend mempty mempty) (Substitution Map.empty)
+    itStatement 5 (mappend substAT substAC) substAT
 
 testSubstInContext :: SpecWith ()
 testSubstInContext = do
-    it "#1" $ sub substAT emptyCtx `shouldBe` emptyCtx
-    it "#2" $ sub substAT contextBT `shouldBe` contextBT
-    it "#3" $ sub substBC contextTB `shouldBe` contextTC
-    it "#4" $ sub substBC ( sub substAT contextTB) `shouldBe` contextTC
-    it "#5" $ sub substAT ( sub substBC contextTB) `shouldBe` contextTC
+    itStatement 1 (sub substAT emptyCtx) emptyCtx
+    itStatement 2 (sub substAT contextBT) contextBT
+    itStatement 3 (sub substBC contextTB) contextTC
+    itStatement 4 (sub substBC ( sub substAT contextTB)) contextTC
+    itStatement 5 (sub substAT ( sub substBC contextTB)) contextTC
 
 testSubstInType :: SpecWith ()
 testSubstInType = do
-    it "#1" $ sub substAT tpT `shouldBe` tpT
-    it "#2" $ sub substBC tpB `shouldBe` tpC
-    it "#3" $ sub substBC arrType `shouldBe` (TArr tpT tpC)
-    it "#4" $ sub substBC (TArr arrType tpB) `shouldBe` (TArr (TArr tpT tpC) tpC)
-    it "#5" $ sub substBC (TArr arrType (TArr tpC tpB)) `shouldBe` (TArr (TArr tpT tpC) (TArr tpC tpC))
+    itStatement 1 (sub substAT tpT) tpT
+    itStatement 2 (sub substBC tpB) tpC
+    itStatement 3 (sub substBC arrType) (TArr tpT tpC)
+    itStatement 4 (sub substBC (TArr arrType tpB)) (TArr (TArr tpT tpC) tpC)
+    itStatement 5 (sub substBC (TArr arrType (TArr tpC tpB))) (TArr (TArr tpT tpC) (TArr tpC tpC))
 
 testCompose :: SpecWith ()
 testCompose = do
-    it "#1" $ compose emptySubst substAT `shouldBe` substAT
-    it "#2" $ compose substAT substBC  `shouldBe` Substitution (Map.fromList[(nameB, tpC), (nameA, tpT)])
-    it "#3" $ compose substTC substAT  `shouldBe` Substitution (Map.fromList[(nameA, tpC), (nameT, tpC)])
-    it "#4" $ compose substX12 (compose substX01 substXX0) `shouldBe` Substitution (Map.fromList [(nameX, tpX2), (nameX0, tpX2), (nameX1, tpX2)])
-    it "#5" $ compose substX30 (compose substX1A23 substXA01) `shouldBe` Substitution (Map.fromList [(nameX3, tpX0), (nameX1, TArr tpX2 tpX0), (nameX, TArr tpX0 (TArr tpX2 tpX0))])
+    itStatement 1 (compose emptySubst substAT) substAT
+    itStatement 2 (compose substAT substBC) (Substitution (Map.fromList[(nameB, tpC), (nameA, tpT)]))
+    itStatement 3 (compose substTC substAT) (Substitution (Map.fromList[(nameA, tpC), (nameT, tpC)]))
+    itStatement 4 (compose substX12 (compose substX01 substXX0)) (Substitution (Map.fromList [(nameX, tpX2), (nameX0, tpX2), (nameX1, tpX2)]))
+    itStatement 5 (compose substX30 (compose substX1A23 substXA01)) (Substitution (Map.fromList [(nameX3, tpX0), (nameX1, TArr tpX2 tpX0), (nameX, TArr tpX0 (TArr tpX2 tpX0))]))
 
 testE :: SpecWith ()
 testE = do
-    it "#1" $ e ctxXY varX tpSigma `shouldBe` Just res1set
-    it "#2" $ e emptyCtx lamXY_X tpSigma `shouldBe` Just res2set
-    it "#3" $ e ctxXaYb appXY tpSigma `shouldBe`Just res3set
-    it "#4" $ e emptyCtx appXY tpSigma `shouldBe` Nothing
-    it "#5" $ e emptyCtx lamXX tpSigma `shouldBe` Just res4set
-    it "#6" $ e (mkCtx [(nameY, tpX0)]) appLam tpSigma `shouldBe` Just ( Set.fromList([(tpX1, tpX0), (tpX3, tpX2), (TArr tpX1 tpSigma, TArr tpX2 tpX3)]) )
+    itStatement 1 (e ctxXY varX tpSigma) (Just res1set)
+    itStatement 2 (e emptyCtx lamXY_X tpSigma) (Just res2set)
+    itStatement 3 (e ctxXaYb appXY tpSigma) (Just res3set)
+    itStatement 4 (e emptyCtx appXY tpSigma) Nothing
+    itStatement 5 (e emptyCtx lamXX tpSigma) (Just res4set)
+    itStatement 6 (e (mkCtx [(nameY, tpX0)]) appLam tpSigma) (Just ( Set.fromList([(tpX1, tpX0), (tpX3, tpX2), (TArr tpX1 tpSigma, TArr tpX2 tpX3)]) ))
 
 unpackSubstituion :: Maybe (Set Equation) -> Type
 unpackSubstituion set = case set of
@@ -159,9 +166,9 @@ unpackSubstituion set = case set of
 
 testU :: SpecWith ()
 testU = do
-    it "#1" $ unpackSubstituion (e ctxXY varX tpSigma) `shouldBe` tpY
-    it "#2" $ unpackSubstituion (e emptyCtx lamXY_X tpSigma) `shouldBe` tpX020
-    it "#3" $ unpackSubstituion (e ctxXaYb appXY tpSigma) `shouldBe` tpBeta
-    it "#4" $ unpackSubstituion (e emptyCtx appXY tpSigma) `shouldBe` noType
-    it "#5" $ unpackSubstituion (e emptyCtx lamXX tpSigma) `shouldBe` (TArr tpX0 tpX0)
-    it "#6" $ unpackSubstituion (e (Context (Map.fromList [(nameY, tpX0)])) appLam tpSigma) `shouldBe` tpX2
+    itStatement 1 (unpackSubstituion (e ctxXY varX tpSigma)) tpY
+    itStatement 2 (unpackSubstituion (e emptyCtx lamXY_X tpSigma)) tpX020
+    itStatement 3 (unpackSubstituion (e ctxXaYb appXY tpSigma)) tpBeta
+    itStatement 4 (unpackSubstituion (e emptyCtx appXY tpSigma)) noType
+    itStatement 5 (unpackSubstituion (e emptyCtx lamXX tpSigma)) (TArr tpX0 tpX0)
+    itStatement 6 (unpackSubstituion (e (Context (Map.fromList [(nameY, tpX0)])) appLam tpSigma)) tpX2
